@@ -1,5 +1,6 @@
 package hse.java.lectures.lecture6.tasks.synchronizer;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Synchronizer {
@@ -23,10 +24,26 @@ public class Synchronizer {
      */
     public void execute() {
         // add monitor and sync
+        StreamingMonitor monitor = new StreamingMonitor(tasks, ticksPerWriter);
+        for (StreamWriter writer : tasks) {
+            writer.attachMonitor(monitor);
+        }
+
+        List<Thread> workers = new ArrayList<>();
         for (StreamWriter writer : tasks) {
             Thread worker = new Thread(writer, "stream-writer-" + writer.getId());
             worker.setDaemon(true);
             worker.start();
+            workers.add(worker);
+        }
+
+        for (Thread worker : workers) {
+            try {
+                worker.join();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
         }
     }
 
